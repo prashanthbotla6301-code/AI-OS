@@ -1,0 +1,44 @@
+[workspace]
+resolver = "2"
+members = [
+    "libs/agentos-common",
+    "libs/agentos-ipc",
+    "sdk/agentos-schema",
+    "sdk/agentos-sdk",
+    "system/agentos-core",
+    "system/agent-runtime",
+    "system/ai-orchestrator",
+    "system/agent-bus",
+    "system/agent-package-manager",
+    "system/permission-manager",
+    "system/model-router",
+    "desktop/shell",
+    "tests",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "MIT OR Apache-2.0"
+
+[workspace.dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+semver = "1"
+sha2 = "0.10"
+libc = "0.2"
+ab_glyph = "0.2"
+agentos-common = { path = "libs/agentos-common" }
+agentos-ipc = { path = "libs/agentos-ipc" }
+agentos-schema = { path = "sdk/agentos-schema" }
+
+# System services are delivered as static musl binaries inside the initramfs:
+# strip symbols, keep binaries small, prefer size over marginal speed.
+[profile.release]
+strip = "symbols"
+opt-level = "s"
+lto = "thin"
+panic = "unwind"
+
+[profile.dev]
+opt-level = 1

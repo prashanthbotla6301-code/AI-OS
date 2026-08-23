@@ -1,0 +1,24 @@
+[package]
+name = "agentos-core"
+version.workspace = true
+edition.workspace = true
+description = "AgentOS Core: PID 1 system initialization, service lifecycle, configuration, state, IPC coordination"
+
+[lib]
+name = "agentos_core"
+path = "src/lib.rs"
+
+[[bin]]
+name = "agentos-core"
+path = "src/main.rs"
+
+[[bin]]
+name = "agentos-ctl"
+path = "src/ctl.rs"
+
+[dependencies]
+agentos-common.workspace = true
+agentos-ipc.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+libc.workspace = true

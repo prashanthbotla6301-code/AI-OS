@@ -1,0 +1,24 @@
+{
+  "format": "agentos",
+  "format_version": "1.0.0",
+  "id": "com.agentos.netdemo",
+  "name": "Network Demo Agent",
+  "version": "1.0.0",
+  "description": "Security demonstration agent: requests the `network` permission. Because AgentOS is deny-by-default, this agent installs but is BLOCKED at start until an operator explicitly grants network.",
+  "developer": {
+    "name": "AgentOS Project",
+    "url": "https://agentos.dev"
+  },
+  "runtime": {
+    "engine": "mock",
+    "entry": { "kind": "builtin:echo" }
+  },
+  "permissions": [
+    {
+      "permission": "network",
+      "reason": "Demonstrates the permission gate: this request is denied by default."
+    }
+  ],
+  "capabilities": ["net.demo"],
+  "tags": ["example", "security-demo"]
+}

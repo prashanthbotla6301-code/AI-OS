@@ -1,0 +1,21 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://agentos.dev/schema/agent-v1.schema.json",
+  "title": "AgentOS Agent descriptor (Phase 1)",
+  "type": "object",
+  "required": ["entry"],
+  "additionalProperties": false,
+  "properties": {
+    "entry": { "type": "object" },
+    "interface": { "type": "array", "items": { "type": "string", "maxLength": 128 } },
+    "sandbox": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "fs": { "type": "array", "items": { "type": "string", "maxLength": 4096 } },
+        "network": { "type": "boolean", "default": false },
+        "exec": { "type": "boolean", "default": false }
+      }
+    }
+  }
+}

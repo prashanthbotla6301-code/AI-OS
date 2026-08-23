@@ -1,0 +1,7 @@
+# AgentOS shell environment (busybox ash)
+export PATH=/bin:/sbin:/usr/bin:/usr/sbin
+export PS1='\e[36magentos\e[0m \w # '
+export TERM=linux
+alias ll='ls -l'
+alias la='ls -la'
+echo "AgentOS v$(cat /etc/agentos/version 2>/dev/null || echo 0.1.0-dev) — type 'agentos-ctl status' for system status."

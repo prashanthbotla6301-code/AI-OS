@@ -1,0 +1,16 @@
+[package]
+name = "agent-package-manager"
+version.workspace = true
+edition.workspace = true
+description = "AgentOS agent package manager (.agent format): validation, install/uninstall, integrity registry"
+
+[[bin]]
+name = "agentos-apm"
+path = "src/main.rs"
+
+[dependencies]
+agentos-common.workspace = true
+agentos-ipc.workspace = true
+agentos-schema.workspace = true
+serde.workspace = true
+serde_json.workspace = true

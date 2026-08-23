@@ -1,0 +1,188 @@
+#
+# AgentOS x86_64 kernel configuration fragment
+# =============================================
+# Base: `make defconfig` (x86_64), merged with this fragment via
+# scripts/kconfig/merge_config.sh, then `make olddefconfig`.
+#
+# Phase 1 policy:
+#   - Everything AgentOS needs is BUILT IN (CONFIG_MODULES=n).
+#     There is no module loader, no module signing, no out-of-tree drivers.
+#   - Only the driver families AgentOS targets are enabled:
+#     virtio (QEMU/KVM), bochs/qemu std VGA, PS/2 + USB HID, serial,
+#     EFI, devtmpfs, tmpfs, initramfs-resident root.
+#   - seccomp + YAMA are enabled as groundwork for Phase 2 agent sandboxing.
+#
+# Pinned kernel line: 6.12.x LTS (see scripts/build-kernel.sh for the pin).
+
+CONFIG_DEFAULT_HOSTNAME="agentos"
+# gzip kernel compression: zstd -22's compression window exceeds the RAM
+# budget of small build machines (this one); gzip is plenty for a ~15MB bzImage.
+CONFIG_KERNEL_GZIP=y
+CONFIG_KERNEL_ZSTD=n
+
+# ---- core userspace plumbing -------------------------------------------
+CONFIG_MULTIUSER=y
+CONFIG_FHANDLE=y
+CONFIG_BINFMT_ELF=y
+CONFIG_BINFMT_SCRIPT=y
+CONFIG_EPOLL=y
+CONFIG_SIGNALFD=y
+CONFIG_TIMERFD=y
+CONFIG_EVENTFD=y
+CONFIG_SHMEM=y
+CONFIG_AIO=y
+CONFIG_MEMFD_CREATE=y
+CONFIG_ADVISE_SYSCALLS=y
+CONFIG_RSEQ=y
+CONFIG_UNIX98_PTYS=y
+CONFIG_LEGACY_PTYS=n
+CONFIG_SYSVIPC=y
+CONFIG_POSIX_MQUEUE=y
+CONFIG_FUTEX=y
+
+# ---- filesystems --------------------------------------------------------
+CONFIG_PROC_FS=y
+CONFIG_PROC_SYSCTL=y
+CONFIG_SYSFS=y
+CONFIG_DEVTMPFS=y
+CONFIG_DEVTMPFS_MOUNT=n
+CONFIG_TMPFS=y
+CONFIG_TMPFS_POSIX_ACL=y
+CONFIG_ISO9660_FS=y
+CONFIG_EXT4_FS=y
+CONFIG_SQUASHFS=y
+CONFIG_FUSE_FS=y
+
+# ---- security (Phase 2 sandbox groundwork; harmless now) ----------------
+CONFIG_SECCOMP=y
+CONFIG_SECCOMP_FILTER=y
+CONFIG_SECURITY=y
+CONFIG_SECURITY_YAMA=y
+CONFIG_LANDLOCK=y
+CONFIG_SECURITY_LOCKDOWN_LSM=y
+CONFIG_SECURITY_LOCKDOWN_LSM_EARLY=y
+CONFIG_LOCK_DOWN_KERNEL_FORCE_NONE=y
+CONFIG_DEFAULT_SECURITY_DAC=y
+
+# ---- PCI + virtio (QEMU/KVM and modern hardware) ------------------------
+CONFIG_PCI=y
+CONFIG_PCI_MSI=y
+CONFIG_VIRTIO=y
+CONFIG_VIRTIO_PCI=y
+CONFIG_VIRTIO_PCI_LEGACY=y
+CONFIG_VIRTIO_BLK=y
+CONFIG_VIRTIO_NET=y
+CONFIG_VIRTIO_CONSOLE=y
+CONFIG_VIRTIO_GPU=y
+CONFIG_VIRTIO_INPUT=y
+CONFIG_SCSI_VIRTIO=y
+CONFIG_BLK_DEV_SR=y
+
+# ---- ATA (real hardware SATA/ATAPI cdrom; QEMU ide cdrom) ---------------
+CONFIG_ATA=y
+CONFIG_ATA_PIIX=y
+CONFIG_SATA_AHCI=y
+CONFIG_ATA_GENERIC=y
+
+# ---- networking (loopback + virtio-net only) -----------------------------
+CONFIG_NET=y
+CONFIG_INET=y
+CONFIG_IPV6=n
+CONFIG_PACKET=y
+CONFIG_UNIX=y
+CONFIG_NETFILTER=n
+CONFIG_INET_DIAG=n
+CONFIG_TCP_MD5SIG=n
+
+# ---- graphics: DRM virtio-gpu + bochs, fbdev emulation, fbcon -----------
+CONFIG_DRM=y
+CONFIG_DRM_VIRTIO_GPU=y
+CONFIG_DRM_BOCHS=y
+CONFIG_DRM_I915=n
+CONFIG_DRM_FBDEV_EMULATION=y
+CONFIG_DRM_FBDEV_OVERALLOC=100
+CONFIG_FB=y
+CONFIG_FB_EFI=y
+CONFIG_FB_VESA=y
+CONFIG_SYSFB_SIMPLEFB=y
+CONFIG_VT=y
+CONFIG_VT_CONSOLE=y
+CONFIG_FRAMEBUFFER_CONSOLE=y
+CONFIG_FRAMEBUFFER_CONSOLE_DETECT_PRIMARY=y
+CONFIG_LOGO=n
+
+# ---- input: PS/2 + USB HID, evdev ----------------------------------------
+CONFIG_INPUT=y
+CONFIG_INPUT_EVDEV=y
+CONFIG_INPUT_KEYBOARD=y
+CONFIG_KEYBOARD_ATKBD=y
+CONFIG_SERIO=y
+CONFIG_SERIO_I8042=y
+CONFIG_SERIO_LIBPS2=y
+CONFIG_INPUT_MOUSE=y
+CONFIG_MOUSE_PS2=y
+CONFIG_HID=y
+CONFIG_HID_GENERIC=y
+CONFIG_USB=y
+CONFIG_USB_PCI=y
+CONFIG_USB_XHCI_HCD=y
+CONFIG_USB_EHCI_HCD=y
+CONFIG_USB_HID=y
+CONFIG_USB_SUPPORT=y
+CONFIG_USB_AUDIO=n
+CONFIG_USB_PRINTER=n
+
+# ---- serial console ------------------------------------------------------
+CONFIG_SERIAL_8250=y
+CONFIG_SERIAL_8250_CONSOLE=y
+CONFIG_SERIAL_8250_NR_UARTS=4
+
+# ---- EFI ------------------------------------------------------------------
+CONFIG_EFI=y
+CONFIG_EFI_STUB=y
+CONFIG_EFIVAR_FS=y
+
+# ---- trimming: no module loader, no unrelated driver families -----------
+CONFIG_MODULES=n
+CONFIG_MODULE_UNLOAD=n
+CONFIG_ETHERNET=n
+CONFIG_WLAN=n
+CONFIG_WIRELESS=n
+CONFIG_SOUND=n
+CONFIG_SND=n
+CONFIG_MEDIA_SUPPORT=n
+CONFIG_STAGING=n
+CONFIG_BT=n
+CONFIG_NFC=n
+CONFIG_CAN=n
+CONFIG_WIRELESS_EXT=n
+CONFIG_PCI_QUIRKS=y
+CONFIG_ISA=n
+CONFIG_PCCARD=n
+CONFIG_INPUT_JOYSTICK=n
+CONFIG_INPUT_TOUCHSCREEN=n
+CONFIG_GAMEPORT=n
+CONFIG_HIDRAW=y
+CONFIG_INPUT_MISC=n
+CONFIG_CPU_FREQ_DEFAULT_GOV_PERFORMANCE=y
+CONFIG_FTRACE=n
+CONFIG_KPROBES=n
+CONFIG_BPF_SYSCALL=n
+CONFIG_IO_URING=n
+CONFIG_KGDB=n
+CONFIG_DEBUG_INFO_NONE=y
+CONFIG_GDB_SCRIPTS=n
+CONFIG_KCORE=n
+CONFIG_PROC_KCORE=n
+
+# ---- observability / recovery --------------------------------------------
+CONFIG_IKCONFIG=y
+CONFIG_IKCONFIG_PROC=y
+CONFIG_MAGIC_SYSRQ=y
+CONFIG_PRINTK_TIME=y
+CONFIG_PANIC_TIMEOUT=8
+CONFIG_EARLY_PRINTK=y
+CONFIG_BOOTTIME_TRACING=n
+CONFIG_DEBUG_KERNEL=y
+CONFIG_DEBUG_FS=y
+CONFIG_KGDB_SERIAL_CONSOLE=n

@@ -1,0 +1,15 @@
+[package]
+name = "model-router"
+version.workspace = true
+edition.workspace = true
+description = "AgentOS model router: local/cloud/hybrid model provider abstraction with usage + cost accounting"
+
+[[bin]]
+name = "agentos-models"
+path = "src/main.rs"
+
+[dependencies]
+agentos-common.workspace = true
+agentos-ipc.workspace = true
+serde.workspace = true
+serde_json.workspace = true

@@ -1,0 +1,23 @@
+#!/bin/busybox sh
+# AgentOS initramfs entry point. The kernel has already unpacked this cpio
+# archive as its root filesystem; agentos-core becomes PID 1 and owns all
+# subsequent mounts, service supervision, and shutdown/reboot behavior.
+
+export PATH=/bin:/sbin:/usr/bin:/usr/sbin
+export HOME=/root
+export TERM=linux
+# Socket group 1000 is the unprivileged AgentOS service/desktop group. The
+# IPC library uses 0660 sockets and applies this group in the real image.
+export AGENTOS_SOCKET_GID=1000
+
+mkdir -p /dev /proc /sys /run /tmp /var/lib/agentos /var/log/agentos
+
+# Keep diagnostics visible if the Rust PID-1 binary cannot be executed. The
+# real filesystem mounts are intentionally owned by agentos-core, not by this
+# shell, so PID 1 has one authoritative initialization path.
+if [ ! -x /usr/bin/agentos-core ]; then
+    echo "AgentOS init: /usr/bin/agentos-core is missing" >/dev/console 2>/dev/null || true
+    exit 127
+fi
+
+exec /usr/bin/agentos-core "$@"

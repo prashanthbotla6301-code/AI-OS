@@ -1,0 +1,9 @@
+{
+  "permissions": [
+    {
+      "permission": "network",
+      "access": "write",
+      "reason": "Demonstrates the permission gate: this request is denied by default."
+    }
+  ]
+}

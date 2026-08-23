@@ -1,0 +1,17 @@
+[package]
+name = "agentos-shell"
+version.workspace = true
+edition.workspace = true
+description = "AgentOS desktop shell: direct-rendering framebuffer UI (no X11/Wayland), terminal, file manager, settings, agent panels"
+
+[[bin]]
+name = "agentos-shell"
+path = "src/main.rs"
+
+[dependencies]
+agentos-common.workspace = true
+agentos-ipc.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+libc.workspace = true
+ab_glyph.workspace = true

@@ -1,0 +1,16 @@
+{
+  "default": "deny",
+  "permissions": {
+    "filesystem.read":  { "default": "deny", "description": "read access to files outside the agent store" },
+    "filesystem.write": { "default": "deny", "description": "write access to the filesystem" },
+    "network":          { "default": "deny", "description": "any network egress" },
+    "microphone":       { "default": "deny", "description": "audio capture" },
+    "camera":           { "default": "deny", "description": "camera capture" },
+    "gpu.compute":      { "default": "deny", "description": "GPU compute allocation" },
+    "system.settings":  { "default": "deny", "description": "changing OS settings" },
+    "process.execute":  { "default": "deny", "description": "spawning arbitrary processes" },
+    "agent.invoke":     { "default": "deny", "description": "invoking other agents over the bus" },
+    "memory.read":      { "default": "deny", "description": "reading agent long-term memory" },
+    "memory.write":     { "default": "deny", "description": "writing agent long-term memory" }
+  }
+}

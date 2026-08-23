@@ -1,0 +1,9 @@
+{
+  "entry": { "kind": "builtin:echo" },
+  "interface": ["bus.receive"],
+  "sandbox": {
+    "fs": [],
+    "network": false,
+    "exec": false
+  }
+}

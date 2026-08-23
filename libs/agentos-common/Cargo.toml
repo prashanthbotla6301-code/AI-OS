@@ -1,0 +1,9 @@
+[package]
+name = "agentos-common"
+version.workspace = true
+edition.workspace = true
+description = "AgentOS shared constants, paths, logging and id generation"
+
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true

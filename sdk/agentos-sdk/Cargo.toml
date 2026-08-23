@@ -1,0 +1,14 @@
+[package]
+name = "agentos-sdk"
+version.workspace = true
+edition.workspace = true
+description = "AgentOS Agent SDK: build, validate and stage .agent packages for AgentOS"
+
+[[bin]]
+name = "agentos-sdk"
+path = "src/main.rs"
+
+[dependencies]
+agentos-schema.workspace = true
+agentos-common.workspace = true
+serde_json.workspace = true
