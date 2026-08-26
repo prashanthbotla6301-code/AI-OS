@@ -1,0 +1,17 @@
+[package]
+name = "agent-runtime"
+version.workspace = true
+edition.workspace = true
+description = "AgentOS agent runtime: agent abstraction, lifecycle, sandbox & resource interfaces (mock executor in Phase 1)"
+
+[[bin]]
+name = "agentos-runtime"
+path = "src/main.rs"
+
+[dependencies]
+agentos-common.workspace = true
+agentos-ipc.workspace = true
+agentos-schema.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+semver.workspace = true

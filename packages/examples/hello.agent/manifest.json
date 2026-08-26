@@ -1,0 +1,20 @@
+{
+  "format": "agentos",
+  "format_version": "1.0.0",
+  "id": "com.agentos.hello",
+  "name": "Hello Agent",
+  "version": "1.0.0",
+  "description": "Built-in example agent. Requests zero permissions and runs in the Phase 1 mock executor (no agent code is executed).",
+  "developer": {
+    "name": "AgentOS Project",
+    "url": "https://agentos.dev"
+  },
+  "runtime": {
+    "engine": "mock",
+    "entry": { "kind": "builtin:echo" },
+    "min_agentos": "0.1.0"
+  },
+  "permissions": [],
+  "capabilities": ["greeting"],
+  "tags": ["example", "builtin"]
+}

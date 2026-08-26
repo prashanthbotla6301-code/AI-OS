@@ -1,0 +1,15 @@
+{
+  "providers": [
+    {
+      "id": "echo-mock",
+      "kind": "local",
+      "provider": "agentos",
+      "model": "echo-1",
+      "capabilities": ["text.generate", "text.echo"],
+      "cost_per_mtok_in": 0.0,
+      "cost_per_mtok_out": 0.0,
+      "max_context_tokens": 8192,
+      "enabled": true
+    }
+  ]
+}

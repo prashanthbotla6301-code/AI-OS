@@ -1,0 +1,19 @@
+[package]
+name = "agentos-tests"
+version.workspace = true
+edition.workspace = true
+description = "AgentOS integration tests: boots agentos-core in dev mode with all real services"
+
+[dependencies]
+agentos-common.workspace = true
+agentos-ipc.workspace = true
+agentos-schema.workspace = true
+serde_json.workspace = true
+
+[[test]]
+name = "integration"
+path = "src/integration.rs"
+
+[[test]]
+name = "schema_files"
+path = "src/schema_files.rs"

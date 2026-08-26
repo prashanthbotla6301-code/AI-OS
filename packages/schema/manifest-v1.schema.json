@@ -1,0 +1,83 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://agentos.dev/schema/manifest-v1.schema.json",
+  "title": "AgentOS Agent Package Manifest (format_version 1.0.0)",
+  "type": "object",
+  "required": ["format", "format_version", "id", "name", "version"],
+  "additionalProperties": true,
+  "properties": {
+    "format": { "const": "agentos" },
+    "format_version": {
+      "type": "string",
+      "description": "Semver of the package format; Phase 1 supports major version 1.",
+      "pattern": "^1\\.[0-9]+\\.[0-9]+$"
+    },
+    "id": {
+      "type": "string",
+      "description": "Reverse-DNS agent identity, globally unique in the Agent Store model.",
+      "pattern": "^[a-z0-9_][a-z0-9_-]*(\\.[a-z0-9_][a-z0-9_-]*)+$",
+      "maxLength": 200
+    },
+    "name": { "type": "string", "minLength": 1, "maxLength": 100 },
+    "version": {
+      "type": "string",
+      "description": "Agent version, strict semver MAJOR.MINOR.PATCH.",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+    },
+    "description": { "type": "string", "maxLength": 2000 },
+    "developer": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string" },
+        "url": { "type": "string" },
+        "email": { "type": "string" }
+      }
+    },
+    "runtime": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "engine": { "enum": ["mock", "process", "wasm"] },
+        "entry": { "type": "object" },
+        "min_agentos": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+" }
+      }
+    },
+    "permissions": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/permissionRequest" }
+    },
+    "capabilities": {
+      "type": "array",
+      "items": { "type": "string", "pattern": "^[a-z0-9.-]{1,64}$" }
+    },
+    "tags": { "type": "array", "items": { "type": "string", "maxLength": 32 } }
+  },
+  "definitions": {
+    "permissionRequest": {
+      "type": "object",
+      "required": ["permission"],
+      "additionalProperties": false,
+      "properties": {
+        "permission": {
+          "enum": [
+            "filesystem.read",
+            "filesystem.write",
+            "network",
+            "microphone",
+            "camera",
+            "gpu.compute",
+            "system.settings",
+            "process.execute",
+            "agent.invoke",
+            "memory.read",
+            "memory.write"
+          ]
+        },
+        "access": { "enum": ["read", "write"] },
+        "resource": { "type": "string", "maxLength": 4096 },
+        "reason": { "type": "string", "maxLength": 500 }
+      }
+    }
+  }
+}

@@ -1,0 +1,7 @@
+NAME="AgentOS"
+ID=agentos
+ID_LIKE=linux
+PRETTY_NAME="AgentOS v0.1.0-dev"
+VERSION_ID="0.1.0-dev"
+VERSION_CODENAME="phase1"
+HOME_URL="https://agentos.dev"

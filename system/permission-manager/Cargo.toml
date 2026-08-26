@@ -1,0 +1,16 @@
+[package]
+name = "permission-manager"
+version.workspace = true
+edition.workspace = true
+description = "AgentOS permission authority: fine-grained, deny-by-default permission model"
+
+[[bin]]
+name = "agentos-permissions"
+path = "src/main.rs"
+
+[dependencies]
+agentos-common.workspace = true
+agentos-ipc.workspace = true
+agentos-schema.workspace = true
+serde.workspace = true
+serde_json.workspace = true

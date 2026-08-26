@@ -1,0 +1,64 @@
+{
+  "version": 1,
+  "hostname": "agentos",
+  "planner": "mock",
+  "services": [
+    {
+      "name": "permission-manager",
+      "bin": "/usr/bin/agentos-permissions",
+      "args": [],
+      "user": "root",
+      "socket": "permissions.sock",
+      "enabled": true
+    },
+    {
+      "name": "agent-bus",
+      "bin": "/usr/bin/agentos-bus",
+      "args": [],
+      "user": "agent",
+      "socket": "bus.sock",
+      "enabled": true
+    },
+    {
+      "name": "agent-runtime",
+      "bin": "/usr/bin/agentos-runtime",
+      "args": [],
+      "user": "agent",
+      "socket": "runtime.sock",
+      "enabled": true
+    },
+    {
+      "name": "ai-orchestrator",
+      "bin": "/usr/bin/agentos-orchestrator",
+      "args": [],
+      "user": "agent",
+      "socket": "orchestrator.sock",
+      "enabled": true
+    },
+    {
+      "name": "model-router",
+      "bin": "/usr/bin/agentos-models",
+      "args": [],
+      "user": "agent",
+      "socket": "models.sock",
+      "enabled": true
+    },
+    {
+      "name": "agent-package-manager",
+      "bin": "/usr/bin/agentos-apm",
+      "args": [],
+      "user": "root",
+      "socket": "apm.sock",
+      "enabled": true
+    }
+  ],
+  "shell": {
+    "bin": "/usr/bin/agentos-shell",
+    "user": "agent",
+    "enabled": true
+  },
+  "ttys": [
+    { "dev": "/dev/tty1", "user": "root" },
+    { "dev": "/dev/ttyS0", "user": "root" }
+  ]
+}
