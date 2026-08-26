@@ -1,0 +1,37 @@
+# AgentOS 0.1.0-dev host verification boot log (dev-mode PID-1 autotest, 2026-08-26T12:04:57Z)
+# QEMU unavailable in sandbox; this log captures the real service supervision + IPC + Phase 2A agent run.
+# In-guest serial boot log requires an emulator (none available).
+[1787745875 INFO 327164] service permission-manager started (pid 327165, user root)
+[1787745875 INFO 327164] service agent-bus started (pid 327166, user agent)
+[1787745875 INFO 327164] service agent-runtime started (pid 327167, user agent)
+[1787745875 INFO 327164] service ai-orchestrator started (pid 327168, user agent)
+[1787745875 INFO 327164] service model-router started (pid 327169, user agent)
+[1787745875 INFO 327164] service agent-package-manager started (pid 327170, user root)
+[1787745876 INFO 327164] agentos-shell started (pid 327179)
+[AGENTOS-TEST] begin
+[AGENTOS-TEST] PASS service.permissions.sock — {"service":"permission-manager","version":"0.1.0-dev"}
+[AGENTOS-TEST] PASS service.bus.sock — {"delivered":0,"denied":0,"recent":0,"service":"agent-bus","subscribers":0,"version":"0.1.0-dev"}
+[AGENTOS-TEST] PASS service.runtime.sock — {"executor":"native","executors":["mock","native"],"service":"agent-runtime","version":"0.1.0-dev"}
+[AGENTOS-TEST] PASS service.orchestrator.sock — {"planner":"mock","service":"ai-orchestrator","version":"0.1.0-dev"}
+[AGENTOS-TEST] PASS service.models.sock — {"service":"model-router","version":"0.1.0-dev"}
+[AGENTOS-TEST] PASS service.apm.sock — {"service":"agent-package-manager","version":"0.1.0-dev"}
+[AGENTOS-TEST] PASS core.services-running — 6 running
+[AGENTOS-TEST] PASS desktop.shell — pid=Some(327179) heartbeat=false
+[AGENTOS-TEST] PASS permissions.deny-by-default — {"decision":"deny","reason":"no grant for subject \"com.agentos.netdemo\"; permission network is deny-by-default"}
+[AGENTOS-TEST] PASS apm.install-hello — {"id":"com.agentos.hello","installed_at_ms":1787745877895,"manifest_sha256":"0685a39188eee95687d61ee7d6a049d67e321a25defd452898f863509b5b1100","rel_path":"com.agentos.hello/1.0.0","version":"1.0.0"}
+[AGENTOS-TEST] PASS runtime.registry — [{"capabilities":["greeting"],"description":"Built-in example agent. Requests zero permissions and runs in the Phase 1 mock executor (no agent code is executed).","engine":"mock","id":"com.agentos.hello","install_path":"/tmp/at/state/agents/com.agentos.hello/1.0.0","name":"Hello Agent","requested_permissions":[],"sandbox":{"budget":{"ai_tokens_per_day":0,"cpu_percent":25,"mem_limit_mb":256},"exec":false,"fs_roots":[],"network":false},"state":"Installed","state_since_ms":1787745877896,"version":"1.0.0"}]
+[AGENTOS-TEST] PASS runtime.start-hello(mock-executor) — {"capabilities":["greeting"],"description":"Built-in example agent. Requests zero permissions and runs in the Phase 1 mock executor (no agent code is executed).","detail":"mock executor: simulated run, no agent code is executed","engine":"mock","id":"com.agentos.hello","install_path":"/tmp/at/state/agents/com.agentos.hello/1.0.0","name":"Hello Agent","requested_permissions":[],"sandbox":{"budget":{"ai_tokens_per_day":0,"cpu_percent":25,"mem_limit_mb":256},"exec":false,"fs_roots":[],"network":false},"state":"Running","state_since_ms":1787745877896,"version":"1.0.0"}
+[AGENTOS-TEST] PASS orchestrator.goal-plan — 5
+[AGENTOS-TEST] PASS model-router.local-mock — "echo-1"
+[AGENTOS-TEST] PASS agent-bus.envelope-routing — send=Ok(Object {"id": String("c1d3b9151f29b4ff")})
+[AGENTOS-TEST] PASS security.network-agent-blocked — "network: denied — no grant for subject \"com.agentos.netdemo\"; permission network is deny-by-default"
+[AGENTOS-TEST] PASS native.validate-helloagent — {"errors":[],"warnings":["package requests 1 permission(s): agent.invoke; none are granted at install time (deny-by-default)"]}
+[AGENTOS-TEST] PASS native.install-helloagent — {"id":"com.agentos.helloagent","installed_at_ms":1787745877900,"manifest_sha256":"4176e338bf3a2647c345165dc45a2c8ff61f83858e1233973734d52906e2622c","rel_path":"com.agentos.helloagent/1.0.0","version":"1.0.0"}
+[AGENTOS-TEST] PASS native.permission-blocked-without-grant — "agent.invoke: denied — no grant for subject \"com.agentos.helloagent\"; permission agent.invoke is deny-by-default"
+[AGENTOS-TEST] PASS native.start-running — grant=true start={"capabilities":["greeting"],"description":"First native AgentOS agent. Executes one deterministic task inside the sandboxed agent runtime and returns \"Hello from AgentOS\". Uses no external model, no network, no filesystem, and no subprocesses.","detail":"native executor: 1 op(s) in 0 ms -> \"Hello from AgentOS\"","engine":"native","id":"com.agentos.helloagent","install_path":"/tmp/at/state/agents/com.agentos.helloagent/1.0.0","name":"HelloAgent","output":{"duration_ms":0,"ops_run":1,"text":"Hello from AgentOS","truncated":false},"requested_permissions":[{"access":"write","permission":"agent.invoke","reason":"Publish the agent's deterministic result on the agent bus."}],"sandbox":{"budget":{"ai_tokens_per_day":0,"cpu_percent":25,"mem_limit_mb":256},"exec":false,"fs_roots":[],"network":false},"state":"Running","state_since_ms":1787745877902,"version":"1.0.0"}
+[AGENTOS-TEST] PASS native.result-hello-from-agentos — "Hello from AgentOS"
+[AGENTOS-TEST] PASS native.agent-bus-envelope — send=true
+[AGENTOS-TEST] PASS native.stop — "Stopped"
+[AGENTOS-TEST] PASS native.uninstall-removed — removed=true gone=true
+[AGENTOS-TEST] RESULT: 24/24 PASSED
+[1787745878 INFO 327164] agentos-shell started (pid 327231)
