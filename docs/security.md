@@ -1,18 +1,27 @@
 # AgentOS security model
 
-Security is an architectural boundary, not a claim that Phase 1 is production
+Security is an architectural boundary, not a claim that Phase 2A is production
 hardened.
 
-## Phase 1 invariants
+## Invariants (Phase 1, strengthened in Phase 2A)
 
 - Agent packages are parsed/copy-validated data. The package manager never
   executes package contents.
-- The runtime executes no arbitrary agent code. Its only executor is an honest
-  mock executor that changes lifecycle records and emits an event.
+- The runtime executes no arbitrary agent code. Phase 2A adds the `native`
+  engine, which executes a package's *declarative* `native.task` inside the
+  runtime process: pure operations only (`say`, `fail`), bounded op count and
+  output size, and no filesystem, network, process, or model primitives —
+  there is nothing in the op set that could reach outside the sandbox. Files
+  from the package are never loaded or run; `process`/`wasm` engines fail
+  closed until they exist.
 - The permission set is explicit and deny-by-default. An absent grant is a
-  denial; `ask` is also blocked because the Phase 1 consent UI does not exist.
+  denial; `ask` is also blocked because the consent UI does not exist. A
+  native agent is additionally re-checked by the executor immediately before
+  execution: any denial — or an unreachable permission-manager — aborts the
+  run (fail closed).
 - Network, microphone, camera, GPU, process execution, settings, agent invoke,
-  and memory permissions are not enabled by the shipped policy.
+  and memory permissions are not enabled by the shipped policy. The sandbox
+  profile forces `network`/`exec` off regardless of what a package requests.
 - The runtime and most system services run as the unprivileged `agent` user in
   the image. Core/APM/permission authority need root for Phase 1 filesystem or
   initialization work.
@@ -20,7 +29,9 @@ hardened.
   library refuses to replace a non-socket path and limits the protocol to
   newline-delimited JSON frames.
 - Package traversal rejects symlinks, special files, invalid metadata, and
-  packages over the Phase 1 file/byte limits.
+  packages over the file/byte limits. Native entries are fully validated at
+  install time: a malformed task (unknown op, oversized message, too many
+  ops) rejects the package.
 - Kernel modules and unrelated driver families are disabled in the pinned
   build configuration; seccomp, Landlock, Yama, and lockdown support are built
   as future sandbox groundwork.
@@ -61,7 +72,9 @@ The following are intentionally not hidden:
 - service config is trusted image input; a production update mechanism needs
   signed, atomic configuration updates.
 
-These gaps are why `0.1.0-dev` must not be used as a third-party-agent
-execution platform. Phase 2 starts by adding authenticated operator actions,
-real sandboxed execution, package signatures, and resource enforcement before
-an agent can move beyond mock state.
+These gaps are why `0.1.0-dev`/`0.2.0-dev` must not be used as a
+third-party-agent execution platform. Phase 2A executes only declarative
+native tasks inside the runtime's own process, under the deny-by-default
+authority. Phase 2 continues with authenticated operator actions, process/Wasm
+sandboxing (seccomp/Landlock/capability drop), package signatures, and
+resource enforcement before untrusted code can run.

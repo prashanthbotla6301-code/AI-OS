@@ -1,0 +1,16 @@
+{
+  "entry": {
+    "kind": "native.task",
+    "task": {
+      "ops": [
+        { "op": "say", "message": "Hello from AgentOS" }
+      ]
+    }
+  },
+  "interface": ["bus.receive"],
+  "sandbox": {
+    "fs": [],
+    "network": false,
+    "exec": false
+  }
+}

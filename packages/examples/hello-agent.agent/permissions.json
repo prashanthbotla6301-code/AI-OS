@@ -1,0 +1,9 @@
+{
+  "permissions": [
+    {
+      "permission": "agent.invoke",
+      "access": "write",
+      "reason": "Publish the agent's deterministic result on the agent bus."
+    }
+  ]
+}

@@ -48,6 +48,8 @@ pub struct AgentRow {
     pub engine: String,
     pub capabilities: Vec<String>,
     pub permissions: Vec<String>,
+    /// Text output of the last execution (native executor result).
+    pub output: Option<String>,
 }
 
 #[derive(Clone)]
@@ -210,6 +212,7 @@ impl Sampler {
                                             .collect()
                                     })
                                     .unwrap_or_default(),
+                                output: a["output"]["text"].as_str().map(str::to_string),
                             })
                             .collect();
                     }

@@ -38,7 +38,7 @@
       "type": "object",
       "additionalProperties": true,
       "properties": {
-        "engine": { "enum": ["mock", "process", "wasm"] },
+        "engine": { "enum": ["mock", "native", "process", "wasm"] },
         "entry": { "type": "object" },
         "min_agentos": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+" }
       }

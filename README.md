@@ -12,7 +12,7 @@ Hardware -> Linux kernel -> AgentOS Core -> system services
 
 ## Current phase
 
-Phase 1 builds the bootable foundation:
+Phase 1 built the bootable foundation:
 
 - pinned Linux kernel with built-in QEMU/UEFI/console/framebuffer support;
 - GRUB ISO boot path for legacy BIOS and UEFI;
@@ -26,9 +26,24 @@ Phase 1 builds the bootable foundation:
   code;
 - reproducible, scriptable component/image builds and automated tests.
 
-The Phase 1 planner and model provider are deliberately deterministic
-scaffolding. A package with `process` or `wasm` runtime metadata can be
-validated and installed, but cannot execute yet. No network/cloud provider or
+Phase 2A (this branch) proves the first fully working **native agent package**:
+
+- the `.agent` package format gains the executable `native` engine: a
+  declarative `native.task` (bounded, deterministic ops, e.g. one `say`);
+- HelloAgent (`packages/examples/hello-agent.agent`) is installed, validated,
+  permission-gated, started, executed inside the sandboxed agent runtime, and
+  returns exactly `Hello from AgentOS` — no external AI model involved;
+- execution is denied unless every declared permission is explicitly granted
+  (deny-by-default), and the executor re-checks permissions (failing closed)
+  immediately before each run;
+- the full lifecycle — INSTALL, VALIDATE, PERMISSION_CHECK, START, RUNNING,
+  STOP, FAILED — is announced on the agent bus and surfaced in the desktop
+  Agents panel (`agents.result` shows the captured output);
+- the in-guest autotest and host integration suites install, run, stop,
+  uninstall, and reinstall HelloAgent end to end.
+
+Packages with `process` or `wasm` runtime metadata still install but cannot
+execute yet and fail closed. No network/cloud provider, Agent Store, or
 untrusted agent code is run by this release.
 
 ## Build and boot

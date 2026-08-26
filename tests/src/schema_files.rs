@@ -65,11 +65,40 @@ fn permissions_schema_matches_crate_contract() {
 #[test]
 fn example_packages_validate() {
     let root = repo_root();
-    for pkg in ["hello.agent", "net-demo.agent"] {
+    for pkg in ["hello.agent", "net-demo.agent", "hello-agent.agent"] {
         let dir = root.join("packages/examples").join(pkg);
         let report = agentos_schema::validate_package_dir(&dir);
         assert!(report.valid(), "{pkg} must validate: {:?}", report.errors);
     }
+}
+
+#[test]
+fn hello_agent_native_contract() {
+    // The Phase 2A flagship package: native engine, one deterministic say op,
+    // exactly the permission it uses (agent.invoke), nothing else.
+    let root = repo_root();
+    let dir = root.join("packages/examples/hello-agent.agent");
+    let manifest = agentos_schema::load_manifest(&dir).unwrap();
+    assert_eq!(manifest.id, "com.agentos.helloagent");
+    assert_eq!(manifest.name, "HelloAgent");
+    assert_eq!(
+        manifest.runtime.engine.as_deref(),
+        Some(agentos_schema::engine::NATIVE)
+    );
+    let entry = manifest.runtime.entry.as_ref().unwrap();
+    let parsed = agentos_schema::native::parse_entry(entry).unwrap();
+    assert_eq!(
+        parsed.task.ops,
+        vec![agentos_schema::native::Op::Say {
+            message: "Hello from AgentOS".into()
+        }]
+    );
+    let perms: Vec<_> = manifest
+        .permissions
+        .iter()
+        .map(|p| p.permission.as_str())
+        .collect();
+    assert_eq!(perms, vec![agentos_schema::permission::AGENT_INVOKE]);
 }
 
 #[test]

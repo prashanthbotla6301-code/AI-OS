@@ -606,6 +606,157 @@ mod autotest {
             }
         }
 
+        // 16..22: Phase 2A — native agent lifecycle (HelloAgent)
+        let native_pkg = [
+            "/opt/agentos/packages/hello-agent.agent",
+            "packages/examples/hello-agent.agent",
+        ]
+        .iter()
+        .find(|e| std::path::Path::new(e).exists())
+        .map(|p| p.to_string());
+        if let Some(src) = native_pkg {
+            // 16: validate + install the native package
+            let val = agentos_ipc::call(
+                &p.socket(agentos_common::sockets::APM),
+                "apm.validate",
+                serde_json::json!({"path": src}),
+            );
+            check(
+                &mut res,
+                "native.validate-helloagent",
+                matches!(&val, Ok(v) if v["errors"].as_array().map(|a| a.is_empty()).unwrap_or(false)),
+                val.map(|v| v.to_string()).unwrap_or_else(|e| e.message),
+            );
+            let ins = agentos_ipc::call(
+                &p.socket(agentos_common::sockets::APM),
+                "apm.install",
+                serde_json::json!({"path": src}),
+            );
+            check(
+                &mut res,
+                "native.install-helloagent",
+                matches!(&ins, Ok(v) if v["id"]=="com.agentos.helloagent"),
+                ins.map(|v| v.to_string()).unwrap_or_else(|e| e.message),
+            );
+            let _ = agentos_ipc::call(
+                &p.socket(agentos_common::sockets::RUNTIME),
+                "agents.rescan",
+                serde_json::json!({}),
+            );
+            // 17: denied permission => agent must not start (deny-by-default)
+            let blk = agentos_ipc::call(
+                &p.socket(agentos_common::sockets::RUNTIME),
+                "agents.start",
+                serde_json::json!({"id":"com.agentos.helloagent"}),
+            );
+            let blocked = matches!(&blk, Ok(v) if v["agent"]["state"]=="Blocked");
+            check(
+                &mut res,
+                "native.permission-blocked-without-grant",
+                blocked,
+                blk.map(|v| v["agent"]["detail"].to_string())
+                    .unwrap_or_else(|e| e.message),
+            );
+            // 18: explicit operator grant, then start => Running
+            let grant = agentos_ipc::call(
+                &p.socket(agentos_common::sockets::PERMISSIONS),
+                "grants.grant",
+                serde_json::json!({
+                    "subject":"com.agentos.helloagent",
+                    "permission":"agent.invoke",
+                    "access":"write",
+                    "note":"autotest: native result announcement"
+                }),
+            );
+            let start = agentos_ipc::call(
+                &p.socket(agentos_common::sockets::RUNTIME),
+                "agents.start",
+                serde_json::json!({"id":"com.agentos.helloagent"}),
+            );
+            check(
+                &mut res,
+                "native.start-running",
+                matches!(&start, Ok(v) if v["state"]=="Running"),
+                format!(
+                    "grant={} start={}",
+                    grant.is_ok(),
+                    start.map(|v| v.to_string()).unwrap_or_else(|e| e.message)
+                ),
+            );
+            // 19: the deterministic result
+            let out = agentos_ipc::call(
+                &p.socket(agentos_common::sockets::RUNTIME),
+                "agents.result",
+                serde_json::json!({"id":"com.agentos.helloagent"}),
+            );
+            let text_ok = matches!(&out, Ok(v) if v["text"]=="Hello from AgentOS");
+            check(
+                &mut res,
+                "native.result-hello-from-agentos",
+                text_ok,
+                out.map(|v| v["text"].clone().to_string())
+                    .unwrap_or_else(|e| e.message),
+            );
+            // 20: result + lifecycle envelopes reached the agent bus
+            let rec = agentos_ipc::call(
+                &p.socket(agentos_common::sockets::BUS),
+                "bus.recent",
+                serde_json::json!({"limit":32}),
+            );
+            let bus_ok = matches!(&rec, Ok(v) if v["envelopes"].as_array().map(|a|
+                a.iter().any(|e| e["kind"]=="agent.result" && e["payload"]["agent"]=="com.agentos.helloagent")
+                && a.iter().any(|e| e["kind"]=="agent.lifecycle" && e["payload"]["state"]=="running")
+            ).unwrap_or(false));
+            check(
+                &mut res,
+                "native.agent-bus-envelope",
+                bus_ok,
+                format!("send={:?}", rec.is_ok()),
+            );
+            // 21: stop
+            let stop = agentos_ipc::call(
+                &p.socket(agentos_common::sockets::RUNTIME),
+                "agents.stop",
+                serde_json::json!({"id":"com.agentos.helloagent"}),
+            );
+            check(
+                &mut res,
+                "native.stop",
+                matches!(&stop, Ok(v) if v["state"]=="Stopped"),
+                stop.map(|v| v["state"].clone().to_string())
+                    .unwrap_or_else(|e| e.message),
+            );
+            // 22: uninstall and verify removal
+            let rm = agentos_ipc::call(
+                &p.socket(agentos_common::sockets::APM),
+                "apm.uninstall",
+                serde_json::json!({"id":"com.agentos.helloagent"}),
+            );
+            let _ = agentos_ipc::call(
+                &p.socket(agentos_common::sockets::RUNTIME),
+                "agents.rescan",
+                serde_json::json!({}),
+            );
+            let gone = agentos_ipc::call(
+                &p.socket(agentos_common::sockets::RUNTIME),
+                "agents.get",
+                serde_json::json!({"id":"com.agentos.helloagent"}),
+            );
+            check(
+                &mut res,
+                "native.uninstall-removed",
+                rm.is_ok() && matches!(&gone, Err(_)),
+                format!("removed={} gone={}", rm.is_ok(), gone.is_err()),
+            );
+        } else {
+            check(
+                &mut res,
+                "native.install-helloagent",
+                false,
+                "hello-agent package not found".into(),
+            );
+        }
+
         console_println(&format!(
             "[AGENTOS-TEST] RESULT: {}/{} PASSED",
             res.passed,

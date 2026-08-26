@@ -1,0 +1,33 @@
+{
+  "format": "agentos",
+  "format_version": "1.0.0",
+  "id": "com.agentos.helloagent",
+  "name": "HelloAgent",
+  "version": "1.0.0",
+  "description": "First native AgentOS agent. Executes one deterministic task inside the sandboxed agent runtime and returns \"Hello from AgentOS\". Uses no external model, no network, no filesystem, and no subprocesses.",
+  "developer": {
+    "name": "AgentOS Project",
+    "url": "https://agentos.dev"
+  },
+  "runtime": {
+    "engine": "native",
+    "entry": {
+      "kind": "native.task",
+      "task": {
+        "ops": [
+          { "op": "say", "message": "Hello from AgentOS" }
+        ]
+      }
+    },
+    "min_agentos": "0.1.0"
+  },
+  "permissions": [
+    {
+      "permission": "agent.invoke",
+      "access": "write",
+      "reason": "Publish the agent's deterministic result on the agent bus."
+    }
+  ],
+  "capabilities": ["greeting"],
+  "tags": ["example", "native", "builtin"]
+}

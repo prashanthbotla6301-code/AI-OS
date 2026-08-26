@@ -331,7 +331,7 @@ impl App {
             hits: &mut self.hits,
             mouse: self.mouse,
         };
-        panel_header(&mut ctx, x, y, w, "Agents", "Native agent packages installed on this system (Phase 1: mock executor — no agent code runs)");
+        panel_header(&mut ctx, x, y, w, "Agents", "Native agent packages installed on this system (Phase 2A: native + mock executors inside the AgentOS sandbox)");
         button(
             &mut ctx,
             x + w - 190,
@@ -407,7 +407,19 @@ impl App {
                 let pl = format!("requests: {}", a.permissions.join(", "));
                 font::draw_text(ctx.fb, Face::Sans, 10, bx + 6, yy + 56, &pl, ctx.theme.warn);
             }
-            if let Some(d) = &a.detail {
+            if let Some(o) = &a.output {
+                let res = format!("result: \u{201c}{}\u{201d}", o);
+                font::draw_text_clipped(
+                    ctx.fb,
+                    Face::SansBold,
+                    10,
+                    x + 20,
+                    yy + 78,
+                    &res,
+                    ctx.theme.ok,
+                    w - 260,
+                );
+            } else if let Some(d) = &a.detail {
                 font::draw_text_clipped(
                     ctx.fb,
                     Face::Sans,
@@ -1360,7 +1372,7 @@ impl App {
             true,
             Action::CancelModal,
         );
-        font::draw_text(ctx.fb, Face::Sans, 11, x + 18, y + 44, "Packages bundled in /opt/agentos/packages — validated by the package manager, executed never (Phase 1).", ctx.theme.text_muted);
+        font::draw_text(ctx.fb, Face::Sans, 11, x + 18, y + 44, "Packages bundled in /opt/agentos/packages — validated by the package manager, executed in the sandboxed runtime (native engine).", ctx.theme.text_muted);
         let mut yy = y + 70;
         if self.install_entries.is_empty() {
             font::draw_text(

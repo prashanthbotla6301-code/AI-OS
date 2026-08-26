@@ -34,7 +34,7 @@ store.
 | --- | --- | --- |
 | `agentos-core` | PID 1, config, lifecycle, state, shutdown | Real supervisor and core socket |
 | `permission-manager` | Fine-grained permission authority | Deny by default; explicit local grants |
-| `agent-runtime` | Agent metadata, lifecycle, sandbox/resource contract | Registry plus mock executor; no package code runs |
+| `agent-runtime` | Agent metadata, lifecycle, sandbox/resource contract | Registry plus executors: `native` runs declarative `native.task`s inside the runtime (Phase 2A); `mock` simulates; process/wasm fail closed. No package code is ever loaded. |
 | `ai-orchestrator` | Goal, Plan, Task, planner interface | Deterministic offline planner |
 | `agent-bus` | Envelope routing, subscriptions, audit ring | Real messages; agent sends require `agent.invoke` |
 | `model-router` | Provider abstraction and usage accounting | Local `echo-mock`; cloud/hybrid declarations refuse honestly |
@@ -79,7 +79,7 @@ the envelopes and service methods.
 - Permissions: `permissions.list`, `policy.get`, `grants.list`,
   `grants.grant`, `grants.revoke`, `permissions.check`.
 - Runtime: `agents.list`, `agents.get`, `agents.rescan`, `agents.start`,
-  `agents.stop`.
+  `agents.stop`, `agents.result` (Phase 2A: captured native task output).
 - Orchestrator: `goals.submit`, `goals.list`, `plans.list`, `tasks.list`,
   `tasks.update`.
 - Bus: `bus.send`, `bus.recent`, `bus.subscribe`.

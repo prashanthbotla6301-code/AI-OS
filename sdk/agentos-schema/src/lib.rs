@@ -7,15 +7,20 @@
 //!   manifest.json      <- required, validated here (schema: manifest-v1)
 //!   agent.json         <- required, runtime entry/interface/sandbox spec
 //!   permissions.json   <- required, explicit permission declarations
-//!   runtime/           <- engine assets (Phase 1: mock descriptors only)
+//!   runtime/           <- engine assets (descriptors; the `native` engine
+//!                         declares its deterministic task inline instead)
 //!   tools/  skills/  workflows/  models/  ui/  assets/
 //! ```
 //!
-//! Phase 1 rules (enforced here and mirrored in packages/schema/*.schema.json):
+//! Format rules (enforced here and mirrored in packages/schema/*.schema.json):
 //! * unknown permissions are a hard error,
-//! * `runtime.engine` may be `mock` | `process` | `wasm`; only `mock` is
-//!   *executed* in Phase 1 (see agent-runtime's mock executor) — anything else
-//!   installs but never runs,
+//! * `runtime.engine` may be `mock` | `native` | `process` | `wasm`;
+//!   `native` (Phase 2A) executes a declarative, deterministic task spec
+//!   *inside* the agent-runtime sandbox (see [`native`]); `mock` is simulated
+//!   by the runtime without executing a payload; `process`/`wasm` install but
+//!   fail closed until their sandboxed engines ship,
+//! * `native` packages must carry a parseable `native.task` entry — a
+//!   malformed task rejects the whole package,
 //! * manifests are validated structurally; nothing here trusts the package.
 
 use serde::{Deserialize, Serialize};
@@ -77,16 +82,115 @@ pub mod access {
     }
 }
 
-/// Execution engines the runtime understands. Phase 1 *runs* only `mock`;
-/// other engines install and register but the executor refuses to start them
-/// until Phase 2 sandboxing exists.
+/// Execution engines the runtime understands. `native` (Phase 2A) executes a
+/// declarative task inside the sandboxed agent runtime; `mock` is simulated
+/// by the runtime without executing a payload; `process` and `wasm` install
+/// and register but fail closed until their sandboxed engines exist.
 pub mod engine {
     pub const MOCK: &str = "mock";
+    pub const NATIVE: &str = "native";
     pub const PROCESS: &str = "process";
     pub const WASM: &str = "wasm";
-    pub const ALL: &[&str] = &[MOCK, PROCESS, WASM];
+    pub const ALL: &[&str] = &[MOCK, NATIVE, PROCESS, WASM];
     pub fn is_known(e: &str) -> bool {
         ALL.contains(&e)
+    }
+    /// Engines for which agent-runtime has an executor in this release.
+    /// Everything else fails closed at start time.
+    pub fn is_executable(e: &str) -> bool {
+        e == MOCK || e == NATIVE
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Native engine task spec (`native` packages)
+// ---------------------------------------------------------------------------
+
+/// The native engine: a deterministic, declarative task executed inside the
+/// agent-runtime process. A task is a bounded list of pure operations — there
+/// are no I/O, process, network, or model primitives, so a native task can
+/// never reach outside the runtime sandbox. Results are announced on the
+/// agent bus, which requires the `agent.invoke` permission like any other
+/// agent-originated bus use.
+pub mod native {
+    use serde::{Deserialize, Serialize};
+
+    /// `entry.kind` identifier for native packages.
+    pub const TASK_KIND: &str = "native.task";
+    /// Hard cap on operations per task (install-time and run-time).
+    pub const MAX_TASK_OPS: usize = 64;
+    /// Hard cap on the size of a task's text output, in bytes.
+    pub const MAX_OUTPUT_BYTES: usize = 64 * 1024;
+
+    /// One deterministic operation. `say` appends a fixed message to the
+    /// task output; `fail` deterministically aborts the task (used to model
+    /// and test execution failure paths). The set is deliberately tiny.
+    #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+    #[serde(tag = "op", rename_all = "lowercase", deny_unknown_fields)]
+    pub enum Op {
+        Say {
+            /// Message must be present and bounded (<= 4 KiB).
+            message: String,
+        },
+        Fail {
+            /// Deterministic failure reason surfaced in the agent record.
+            message: String,
+        },
+    }
+
+    /// The task body: `entry = {"kind": "native.task", "task": {"ops": [...]}}`.
+    #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+    #[serde(deny_unknown_fields)]
+    pub struct Task {
+        pub ops: Vec<Op>,
+    }
+
+    /// The full native entry descriptor.
+    #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+    #[serde(deny_unknown_fields)]
+    pub struct Entry {
+        pub kind: String,
+        pub task: Task,
+    }
+
+    /// Parse and structurally validate a native entry. Enforces the op-count
+    /// and message-size budgets so validation (not just execution) rejects
+    /// oversized or malformed tasks.
+    pub fn parse_entry(entry: &serde_json::Value) -> Result<Entry, String> {
+        let e: Entry = serde_json::from_value(entry.clone())
+            .map_err(|err| format!("entry is not a valid {TASK_KIND:?}: {err}"))?;
+        if e.kind != TASK_KIND {
+            return Err(format!(
+                "entry.kind must be {TASK_KIND:?} (got {:?})",
+                e.kind
+            ));
+        }
+        if e.task.ops.is_empty() {
+            return Err("native task must contain at least one op".into());
+        }
+        if e.task.ops.len() > MAX_TASK_OPS {
+            return Err(format!(
+                "native task exceeds {MAX_TASK_OPS} ops (got {})",
+                e.task.ops.len()
+            ));
+        }
+        for op in &e.task.ops {
+            let message = match op {
+                Op::Say { message } | Op::Fail { message } => message,
+            };
+            if message.is_empty() {
+                return Err("native op message must not be empty".into());
+            }
+            if message.len() > 4096 {
+                return Err("native op message must be at most 4096 bytes".into());
+            }
+        }
+        Ok(e)
+    }
+
+    /// Is `entry` a native entry at all (kind check only, no full parse)?
+    pub fn is_native_entry(entry: &serde_json::Value) -> bool {
+        entry.get("kind").and_then(|k| k.as_str()) == Some(TASK_KIND)
     }
 }
 
@@ -328,7 +432,7 @@ pub fn validate_manifest(m: &Manifest) -> ValidationReport {
     match &m.runtime.engine {
         None => r.warning("runtime.engine missing; defaulting to \"mock\""),
         Some(e) if !engine::is_known(e) => r.error(format!("unknown runtime.engine {:?} (known: {:?})", e, engine::ALL)),
-        Some(e) if e != engine::MOCK => r.warning(format!("runtime.engine {:?} installs but will NOT execute in Phase 1 (only \"mock\" runs, in the mock executor)", e)),
+        Some(e) if !engine::is_executable(e) => r.warning(format!("runtime.engine {e:?} installs but will NOT execute until its sandboxed engine ships (executable now: \"mock\", \"native\")")),
         _ => {}
     }
     r
@@ -475,7 +579,16 @@ pub fn validate_package_dir(path: &Path) -> ValidationReport {
             }
             serde_json::from_value::<AgentSpec>(value).ok()
         }) {
-            Some(_) => {}
+            Some(spec) => {
+                // A native package must carry a fully valid native entry: the
+                // task is the executable contract, so a malformed one is an
+                // install-blocking error, not a runtime surprise.
+                if manifest.runtime.engine.as_deref() == Some(engine::NATIVE) {
+                    if let Err(e) = native::parse_entry(&spec.entry) {
+                        r.error(format!("agent.json: {e}"));
+                    }
+                }
+            }
             None => {
                 r.error("agent.json is not valid JSON for the schema (entry object is required)")
             }
@@ -644,6 +757,96 @@ mod tests {
         let r = validate_manifest(&m);
         assert!(r.valid());
         assert!(!r.warnings.is_empty());
+    }
+
+    #[test]
+    fn native_engine_is_validated_and_executable() {
+        let mut m = good_manifest();
+        m.runtime.engine = Some(engine::NATIVE.into());
+        let r = validate_manifest(&m);
+        assert!(
+            r.valid(),
+            "native must install without errors: {:?}",
+            r.errors
+        );
+        assert!(
+            r.warnings.is_empty(),
+            "native is executable now; no warning expected: {:?}",
+            r.warnings
+        );
+        assert!(engine::is_executable(engine::NATIVE));
+        assert!(engine::is_executable(engine::MOCK));
+        assert!(!engine::is_executable(engine::PROCESS));
+        assert!(!engine::is_executable(engine::WASM));
+    }
+
+    // -----------------------------------------------------------------------
+    // Native task spec
+    // -----------------------------------------------------------------------
+
+    fn native_entry_json(ops: serde_json::Value) -> serde_json::Value {
+        serde_json::json!({"kind": "native.task", "task": {"ops": ops}})
+    }
+
+    #[test]
+    fn native_entry_parses_and_budgets() {
+        let e = native::parse_entry(&native_entry_json(serde_json::json!([
+            {"op": "say", "message": "Hello from AgentOS"}
+        ])))
+        .unwrap();
+        assert_eq!(e.task.ops.len(), 1);
+        assert_eq!(
+            e.task.ops[0],
+            native::Op::Say {
+                message: "Hello from AgentOS".into()
+            }
+        );
+
+        // unknown op shape -> rejected
+        assert!(native::parse_entry(&native_entry_json(serde_json::json!([
+            {"op": "exec", "cmd": "rm -rf /"}
+        ])))
+        .is_err());
+        // unknown field on an op -> rejected
+        assert!(native::parse_entry(&native_entry_json(serde_json::json!([
+            {"op": "say", "message": "x", "extra": 1}
+        ])))
+        .is_err());
+        // wrong kind -> rejected
+        assert!(native::parse_entry(&serde_json::json!({
+            "kind": "native.other", "task": {"ops": [{"op": "say", "message": "x"}]}
+        }))
+        .is_err());
+        // empty task -> rejected
+        assert!(native::parse_entry(&native_entry_json(serde_json::json!([]))).is_err());
+        // oversize budget -> rejected
+        let many: Vec<_> = (0..65)
+            .map(|_| serde_json::json!({"op": "say", "message": "m"}))
+            .collect();
+        assert!(native::parse_entry(&native_entry_json(serde_json::Value::Array(many))).is_err());
+        // fail op is a declared, valid op
+        assert!(native::parse_entry(&native_entry_json(serde_json::json!([
+            {"op": "fail", "message": "boom"}
+        ])))
+        .is_ok());
+    }
+
+    #[test]
+    fn native_package_with_malformed_task_is_rejected() {
+        let base =
+            std::env::temp_dir().join(format!("agentos-schema-native-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&base);
+        let pkg = base.join("native.agent");
+        write_package(
+            &pkg,
+            r#"{"format":"agentos","format_version":"1.0.0","id":"com.x.native","name":"Native","version":"1.0.0","runtime":{"engine":"native","entry":{"kind":"native.task","task":{"ops":[{"op":"say","message":"hi"}]}}},"permissions":[],"capabilities":["greeting"]}"#,
+            r#"{"entry":{"kind":"native.task","task":{"ops":[{"op":"explode","target":"/"}]}}}"#,
+            r#"{"permissions":[]}"#,
+        );
+        let r = validate_package_dir(&pkg);
+        assert!(!r.valid(), "malformed native task must reject the package");
+        assert!(r.errors.iter().any(|e| e.contains("native.task")));
+        let _ = fs::remove_dir_all(&base);
     }
 
     fn write_package(dir: &Path, manifest: &str, agent: &str, perms: &str) {

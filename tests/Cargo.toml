@@ -15,5 +15,9 @@ name = "integration"
 path = "src/integration.rs"
 
 [[test]]
+name = "phase2a"
+path = "src/phase2a.rs"
+
+[[test]]
 name = "schema_files"
 path = "src/schema_files.rs"

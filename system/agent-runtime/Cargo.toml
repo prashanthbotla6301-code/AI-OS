@@ -2,7 +2,7 @@
 name = "agent-runtime"
 version.workspace = true
 edition.workspace = true
-description = "AgentOS agent runtime: agent abstraction, lifecycle, sandbox & resource interfaces (mock executor in Phase 1)"
+description = "AgentOS agent runtime: agent abstraction, lifecycle, sandbox & resource interfaces (Phase 2A: native + mock executors)"
 
 [[bin]]
 name = "agentos-runtime"
